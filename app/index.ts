@@ -1,4 +1,12 @@
-import { mqtt } from "./clients";
+import { mqtt, db } from "./clients";
+import type { MQTTReturnData } from "./types";
+
+// checks
+if (!process.env.MQTT_BROKER_URL)
+  throw new Error("MQTT_BROKER_URL environment variable is not set.");
+
+if (!process.env.DATABASE_URL)
+  throw new Error("DATABASE_URL environment variable is not set.");
 
 process.stdout.write("Starting backend...\n");
 
@@ -18,17 +26,45 @@ mqtt.on("error", async (err) => {
 
 mqtt.on("message", async (topic, message) => {
   const raw = message.toString();
-  if (topic.split("/")[2] === "status") {
-    mqtt.unsubscribe(`eco_clients/${topic.split("/")[1]}/status`);
-    mqtt.unsubscribe(`eco_clients/${topic.split("/")[1]}/server_response`);
+  if (
+    topic
+      .split("/")[1]
+      ?.match(
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/,
+      ) == null
+  ) {
+    console.error("Invalid client ID format");
+    return;
+  }
+  if (
+    topic.split("/")[2] === "status" ||
+    topic.split("/")[2] === "server_response"
+  ) {
+    mqtt.unsubscribe(`eco_clients/${topic.split("/")[1]}/#`);
+    mqtt.subscribe(`eco_clients/${topic.split("/")[1]}/data`);
   } else if (topic.split("/")[2] === "data") {
-    const raw = message.toString();
-    const displayed = raw.replace(/\r/g, "\\r").replace(/\n/g, "\\n");
-    process.stdout.write(`Topic: ${topic}, Message: ${displayed}\n`);
-    mqtt.publish(
-      `eco_clients/${topic.split("/")[1]}/server_response`,
-      `${displayed}`,
+    var jsonData: any = {};
+    try {
+      jsonData = JSON.parse(message.toString());
+    } catch (error) {
+      console.error("Failed to parse JSON:", error);
+      return;
+    }
+    if (
+      !(
+        jsonData !== null &&
+        typeof jsonData === "object" &&
+        typeof (jsonData as any).esp_temp === "number"
+      )
+    ) {
+      console.error("Received payload does not match MQTTReturnData");
+      return;
+    }
+
+    process.stdout.write(
+      `Device ${topic.split("/")[1]} ESP32 Temp: ${jsonData.esp_temp}, Local Temp: ${jsonData.local_temp}, Local Hum: ${jsonData.local_hum}, Local GPS Lat: ${jsonData.local_gps_lat}, Local GPS Long: ${jsonData.local_gps_long} \n\n`,
     );
+    mqtt.publish(`eco_clients/${topic.split("/")[1]}/server_response`, `ok`);
   }
 });
 

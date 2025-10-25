@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun run app/index.ts"
+    "start": "bun run app/index.ts",
+    "clean": "prettier . --write"
   },
   "devDependencies": {
     "@types/bun": "latest"
@@ -13,6 +14,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "mqtt": "^5.14.1"
+    "mqtt": "^5.14.1",
+    "prettier": "^3.6.2"
   }
 }
