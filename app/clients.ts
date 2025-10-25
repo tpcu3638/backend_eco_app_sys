@@ -16,6 +16,8 @@ export const mqtt = mqtt1.connect(process.env.MQTT_BROKER_URL, {
   password: process.env.MQTT_PASSWORD,
 });
 
-export const db = new SQL({
+const db = new SQL({
   url: process.env.DATABASE_URL!,
 });
+
+export {db}
