@@ -20,7 +20,7 @@ if (!process.env.CWA_API_SERVICE) {
 process.stdout.write("Starting backend...\n");
 
 mqtt.on("connect", () => {
-  mqtt.subscribe("eco_clients/#", { qos: 0 }, async (err) => {
+  mqtt.subscribe("eco_clients/#", { qos: 0 }, async (err: any) => {
     if (err) {
       console.log(err);
       process.exit(1);
