@@ -3,7 +3,7 @@ name: Deploy to Docker Hub
 on:
   push:
     branches:
-      - remove_better_auth
+      - master
   workflow_dispatch:
 
 env:
