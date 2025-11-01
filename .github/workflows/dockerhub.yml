@@ -47,7 +47,7 @@ jobs:
       - name: Build and push ARM Docker image to Docker Hub
         uses: docker/build-push-action@v5
         with:
-          context: ./streaming
+          context: .
           platforms: linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
