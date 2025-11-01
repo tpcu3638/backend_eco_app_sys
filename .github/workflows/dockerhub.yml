@@ -35,7 +35,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=arm-rmauth-latest
+            type=raw,value=arm-latest
             type=raw,value=latest
 
       - name: Set up QEMU
