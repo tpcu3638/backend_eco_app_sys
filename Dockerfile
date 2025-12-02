@@ -2,4 +2,5 @@ FROM oven/bun:latest
 WORKDIR /app
 COPY . .
 RUN bun install
-CMD ["bun", "start"]
+RUN chmod +x start.sh
+CMD ["./start.sh"]

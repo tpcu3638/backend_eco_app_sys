@@ -101,12 +101,14 @@ app/
 ### Hardware Recommendations
 
 #### Development Environment
+
 - CPU: 2+ cores
 - RAM: 2GB minimum
 - Storage: 10GB available space
 - Network: Stable internet connection
 
 #### Production Environment
+
 - CPU: 4+ cores
 - RAM: 4GB+ (depends on device count)
 - Storage: 50GB+ (depends on data retention)
@@ -117,17 +119,20 @@ app/
 ### Local Development
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/tpcu3638/backend_eco_app_sys.git
 cd backend_eco_app_sys
 ```
 
 2. Install dependencies:
+
 ```bash
 bun install
 ```
 
 3. Set up PostgreSQL database:
+
 ```bash
 # Connect to PostgreSQL
 psql -U postgres
@@ -144,6 +149,7 @@ CREATE DATABASE eco_app;
 4. Configure environment variables (see [Configuration](#configuration))
 
 5. Run the application:
+
 ```bash
 bun start
 ```
@@ -172,7 +178,7 @@ docker run -d \
 Create a `docker-compose.yml` file:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
@@ -275,13 +281,13 @@ CWA_API_SERVICE=https://api.example.com/weather
 
 ### Environment Variables Explained
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `MQTT_BROKER_URL` | ✅ Yes | - | Full URL to MQTT broker (e.g., `mqtt://broker:1883` or `mqtts://broker:8883` for TLS) |
-| `MQTT_USERNAME` | ⚠️ Optional | - | MQTT authentication username (if broker requires auth) |
-| `MQTT_PASSWORD` | ⚠️ Optional | - | MQTT authentication password (if broker requires auth) |
-| `DATABASE_URL` | ✅ Yes | - | PostgreSQL connection string in format: `postgresql://user:pass@host:port/dbname` |
-| `CWA_API_SERVICE` | ✅ Yes | - | Base URL for CWA API service. System appends `/{lat}/{long}` to fetch weather data |
+| Variable          | Required    | Default | Description                                                                           |
+| ----------------- | ----------- | ------- | ------------------------------------------------------------------------------------- |
+| `MQTT_BROKER_URL` | ✅ Yes      | -       | Full URL to MQTT broker (e.g., `mqtt://broker:1883` or `mqtts://broker:8883` for TLS) |
+| `MQTT_USERNAME`   | ⚠️ Optional | -       | MQTT authentication username (if broker requires auth)                                |
+| `MQTT_PASSWORD`   | ⚠️ Optional | -       | MQTT authentication password (if broker requires auth)                                |
+| `DATABASE_URL`    | ✅ Yes      | -       | PostgreSQL connection string in format: `postgresql://user:pass@host:port/dbname`     |
+| `CWA_API_SERVICE` | ✅ Yes      | -       | Base URL for CWA API service. System appends `/{lat}/{long}` to fetch weather data    |
 
 ### MQTT Broker Configuration
 
@@ -338,6 +344,7 @@ Example: 550e8400-e29b-41d4-a716-446655440000
 ```
 
 **UUID Validation Regex:**
+
 ```regex
 ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
 ```
@@ -345,12 +352,14 @@ Example: 550e8400-e29b-41d4-a716-446655440000
 ### Message Flow
 
 **1. Device Initialization**
+
 ```
 Device → MQTT: PUBLISH eco_clients/{uuid}/status {"status": "online"}
 Backend: Subscribes to eco_clients/{uuid}/data
 ```
 
 **2. Data Transmission**
+
 ```
 Device → MQTT: PUBLISH eco_clients/{uuid}/data {sensor_data}
 Backend: Receives & validates data
@@ -387,25 +396,26 @@ Devices should publish JSON data to `eco_clients/{device-uuid}/data`:
 
 #### Field Descriptions
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `esp_temp` | number | ✅ | ESP32 internal temperature sensor reading (°C) |
-| `local_temp` | number | ✅ | External temperature sensor reading (°C) |
-| `local_hum` | number | ✅ | Humidity sensor reading (%) |
-| `local_gps_lat` | string | ✅ | GPS latitude coordinate |
-| `local_gps_long` | string | ✅ | GPS longitude coordinate |
-| `local_time` | string | ❌ | ISO 8601 timestamp from device |
-| `local_jistatus` | boolean | ❌ | Status of JI sensor |
-| `local_light` | boolean | ❌ | Light detection status |
-| `local_detect` | object | ❌ | Custom detection data (stored as JSONB) |
-| `cwa_temp` | number | ❌ | CWA temperature reading (°C) |
-| `cwa_hum` | number | ❌ | CWA humidity reading (%) |
-| `cwa_daily_high` | number | ❌ | CWA daily high forecast (°C) |
-| `cwa_daily_low` | number | ❌ | CWA daily low forecast (°C) |
+| Field            | Type    | Required | Description                                    |
+| ---------------- | ------- | -------- | ---------------------------------------------- |
+| `esp_temp`       | number  | ✅       | ESP32 internal temperature sensor reading (°C) |
+| `local_temp`     | number  | ✅       | External temperature sensor reading (°C)       |
+| `local_hum`      | number  | ✅       | Humidity sensor reading (%)                    |
+| `local_gps_lat`  | string  | ✅       | GPS latitude coordinate                        |
+| `local_gps_long` | string  | ✅       | GPS longitude coordinate                       |
+| `local_time`     | string  | ❌       | ISO 8601 timestamp from device                 |
+| `local_jistatus` | boolean | ❌       | Status of JI sensor                            |
+| `local_light`    | boolean | ❌       | Light detection status                         |
+| `local_detect`   | object  | ❌       | Custom detection data (stored as JSONB)        |
+| `cwa_temp`       | number  | ❌       | CWA temperature reading (°C)                   |
+| `cwa_hum`        | number  | ❌       | CWA humidity reading (%)                       |
+| `cwa_daily_high` | number  | ❌       | CWA daily high forecast (°C)                   |
+| `cwa_daily_low`  | number  | ❌       | CWA daily low forecast (°C)                    |
 
 ### QoS Levels
 
 The system uses **QoS 0** (At most once) for optimal performance:
+
 - Low latency
 - No message acknowledgment overhead
 - Suitable for frequently updated sensor data
@@ -495,13 +505,13 @@ Example queries:
 
 ```sql
 -- Get latest data for a device
-SELECT * FROM logger 
+SELECT * FROM logger
 WHERE device_uuid = '550e8400-e29b-41d4-a716-446655440000'
-ORDER BY created_at DESC 
+ORDER BY created_at DESC
 LIMIT 10;
 
 -- Get average temperature per device
-SELECT device_uuid, 
+SELECT device_uuid,
        AVG(local_temp) as avg_temp,
        COUNT(*) as readings
 FROM logger
@@ -521,16 +531,19 @@ AND created_at > NOW() - INTERVAL '1 hour';
 The system integrates with Taiwan's Central Weather Administration API:
 
 **API Endpoint Format:**
+
 ```
 {CWA_API_SERVICE}/{latitude}/{longitude}
 ```
 
 **Example Request:**
+
 ```
 GET https://api.example.com/weather/25.0330/121.5654
 ```
 
 **Expected Response:**
+
 ```json
 {
   "weather": "晴",
@@ -541,6 +554,7 @@ GET https://api.example.com/weather/25.0330/121.5654
 ```
 
 The system expects the following response structure:
+
 - `weather`: Weather condition description
 - `location`: Location name (stored as `cwa_location`)
 - Additional fields are optional and can be extended
@@ -609,20 +623,22 @@ bun run tsc --noEmit
 ### Development Tips
 
 1. **MQTT Testing**: Use MQTT client tools
+
    ```bash
    # Subscribe to topics
    mosquitto_sub -h localhost -t "eco_clients/#" -v
-   
+
    # Publish test data
    mosquitto_pub -h localhost -t "eco_clients/550e8400-e29b-41d4-a716-446655440000/data" \
      -m '{"esp_temp":25.5,"local_temp":24.8,"local_hum":65.2,"local_gps_lat":"25.0330","local_gps_long":"121.5654"}'
    ```
 
 2. **Database Testing**
+
    ```bash
    # Connect to database
    psql postgresql://user:pass@localhost:5432/eco_app
-   
+
    # Monitor logs in real-time
    SELECT * FROM logger ORDER BY created_at DESC LIMIT 5;
    ```
@@ -673,6 +689,7 @@ docker run -d \
 ### Environment-Specific Configurations
 
 **Development `.env`:**
+
 ```env
 MQTT_BROKER_URL=mqtt://localhost:1883
 DATABASE_URL=postgresql://postgres:password@localhost:5432/eco_app_dev
@@ -680,6 +697,7 @@ CWA_API_SERVICE=https://staging-api.example.com
 ```
 
 **Production `.env.prod`:**
+
 ```env
 MQTT_BROKER_URL=mqtts://prod-broker.example.com:8883
 DATABASE_URL=postgresql://prod_user:secure_pass@db.example.com:5432/eco_app
@@ -722,7 +740,7 @@ SELECT count(*) FROM pg_stat_activity;
 SELECT pg_size_pretty(pg_total_relation_size('logger'));
 
 -- Recent inserts rate
-SELECT 
+SELECT
   DATE_TRUNC('hour', created_at) as hour,
   COUNT(*) as records
 FROM logger
@@ -771,6 +789,7 @@ exit 0
    - Rotate credentials regularly
 
 2. **MQTT Security**
+
    ```conf
    # Enable TLS in mosquitto.conf
    listener 8883
@@ -830,17 +849,18 @@ sudo ufw enable
 
 Expected performance with recommended hardware:
 
-| Metric | Value |
-|--------|-------|
-| Max Devices | 1000+ concurrent |
-| Messages/sec | 100+ |
-| Avg Latency | <100ms |
-| Memory Usage | ~100MB base |
-| CPU Usage | <10% idle, <50% under load |
+| Metric       | Value                      |
+| ------------ | -------------------------- |
+| Max Devices  | 1000+ concurrent           |
+| Messages/sec | 100+                       |
+| Avg Latency  | <100ms                     |
+| Memory Usage | ~100MB base                |
+| CPU Usage    | <10% idle, <50% under load |
 
 ### Scaling Considerations
 
 **Horizontal Scaling:**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -849,11 +869,12 @@ services:
       replicas: 3
       resources:
         limits:
-          cpus: '2'
+          cpus: "2"
           memory: 2G
 ```
 
 **Database Optimization:**
+
 ```sql
 -- Partition by month
 CREATE TABLE logger_y2025m01 PARTITION OF logger
@@ -872,6 +893,7 @@ VACUUM ANALYZE logger;
 **Symptoms:** `MQTT error: Connection refused`
 
 **Solutions:**
+
 ```bash
 # Check broker is running
 systemctl status mosquitto
@@ -891,6 +913,7 @@ mosquitto_sub -h localhost -t test -u username -P password
 **Symptoms:** `DATABASE_URL environment variable is not set`
 
 **Solutions:**
+
 ```bash
 # Verify .env file
 cat .env
@@ -907,6 +930,7 @@ systemctl status postgresql
 **Symptoms:** `Invalid client ID format`
 
 **Solutions:**
+
 - Ensure device UUID matches UUIDv4 format
 - Verify topic structure: `eco_clients/{uuid}/data`
 - Use online UUID validator
@@ -916,6 +940,7 @@ systemctl status postgresql
 **Symptoms:** `Failed to parse JSON`
 
 **Solutions:**
+
 ```bash
 # Validate JSON payload
 echo '{"esp_temp": 25.5}' | jq .
@@ -929,6 +954,7 @@ echo '{"esp_temp": 25.5}' | jq .
 **Symptoms:** `Error fetching CWA data`
 
 **Solutions:**
+
 - Verify API endpoint is accessible
 - Check API key/credentials
 - Monitor rate limits
@@ -1035,7 +1061,10 @@ We welcome contributions! Here's how you can help:
 
 ```typescript
 // Good: Type-safe, clear naming
-async function processDeviceData(uuid: string, data: MQTTReturnData): Promise<void> {
+async function processDeviceData(
+  uuid: string,
+  data: MQTTReturnData,
+): Promise<void> {
   const validated = validateData(data);
   await storeData(uuid, validated);
 }
@@ -1049,6 +1078,7 @@ async function process(id, d) {
 ### Reporting Issues
 
 When reporting issues, please include:
+
 - System information (OS, Bun version)
 - Environment configuration (anonymized)
 - Steps to reproduce
@@ -1094,4 +1124,4 @@ For licensing inquiries, please contact the repository maintainers.
 
 **Built with ❤️ using [Bun](https://bun.sh) 🚀**
 
-*Last Updated: January 2025*
+_Last Updated: January 2025_

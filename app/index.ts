@@ -29,8 +29,58 @@ mqtt.on("connect", () => {
 });
 
 mqtt.on("reconnect", () => console.log("Reconnecting..."));
+// Graceful restart helper. If SELF_RESTART=true the process will attempt to
+// respawn itself using the same executable and args. Otherwise it will exit
+// with a non-zero code so an external supervisor (docker, systemd, pm2) can
+// restart it.
+async function gracefulRestart(code = 1) {
+  try {
+    console.log("Shutting down MQTT client before restart...");
+    // end will flush and close the connection; use a callback to ensure it's closed
+    await new Promise<void>((resolve) => {
+      try {
+        mqtt.end(false, {}, () => resolve());
+      } catch (e) {
+        resolve();
+      }
+    });
+  } catch (e) {
+    // ignore
+  }
+
+  const selfRestart = String(process.env.SELF_RESTART).toLowerCase() === "true";
+  if (selfRestart) {
+    try {
+      console.log("Attempting self-respawn...");
+      const cp = await import("child_process");
+      const spawn = (cp as any).spawn as (...args: any[]) => any;
+      // spawn the same executable (process.execPath) with the same args (process.argv.slice(1))
+      const child = spawn(process.execPath, process.argv.slice(1), {
+        detached: true,
+        stdio: "inherit",
+      }) as any;
+      // optional unref
+      if (typeof child.unref === "function") child.unref();
+      console.log("Respawned child pid:", child && child.pid);
+    } catch (e: any) {
+      console.error("Failed to self-respawn:", e?.message ?? e);
+    }
+  } else {
+    console.log("SELF_RESTART not enabled; exiting to allow external restart.");
+  }
+
+  process.exit(code);
+}
+
 mqtt.on("error", async (err) => {
   console.error("MQTT error:", err);
+  // trigger graceful restart (will exit process)
+  try {
+    await gracefulRestart(1);
+  } catch (e) {
+    // if restart fails for any reason, ensure process exits
+    process.exit(1);
+  }
 });
 
 mqtt.on("message", async (topic, message) => {
@@ -154,16 +204,20 @@ mqtt.on("message", async (topic, message) => {
 
 // ON PROCESS QUIT
 process.on("SIGINT", () => {
-  console.log("Closing MQTT connection...");
-  mqtt.end(false, {}, () => {
-    console.log("MQTT connection closed");
-    process.exit(0);
-  });
+  try {
+    console.log("Closing MQTT connection...");
+    mqtt.end(false, {}, () => {
+      console.log("MQTT connection closed");
+      process.exit(0);
+    });
+  } catch (e) {}
 });
 process.on("SIGTERM", () => {
-  console.log("Closing MQTT connection...");
-  mqtt.end(false, {}, () => {
-    console.log("MQTT connection closed");
-    process.exit(0);
-  });
+  try {
+    console.log("Closing MQTT connection...");
+    mqtt.end(false, {}, () => {
+      console.log("MQTT connection closed");
+      process.exit(0);
+    });
+  } catch (e) {}
 });

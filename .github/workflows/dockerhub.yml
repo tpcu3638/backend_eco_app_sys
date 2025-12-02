@@ -11,7 +11,7 @@ env:
   IMAGE_NAME: yoinkedu/logger-v2-mqtt-end
   NODE_ENV: production
 
-jobs: 
+jobs:
   build-and-push-arm:
     runs-on: ubuntu-latest
     environment: prod
