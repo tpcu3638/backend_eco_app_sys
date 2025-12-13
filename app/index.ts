@@ -2,9 +2,7 @@ import { mqtt, db } from "./clients";
 import getCwaData from "./components/getCwaData";
 import type { MQTTReturnData } from "./types";
 
-const cache: Record<string, any> = {};
 
-const CACHE_DURATION = 1000 * 60 * 60;
 
 // checks
 if (!process.env.MQTT_BROKER_URL)
@@ -19,68 +17,35 @@ if (!process.env.CWA_API_SERVICE) {
 
 process.stdout.write("Starting backend...\n");
 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Note: In Node.js, unhandled rejections do not crash the process by default
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Log and exit to prevent unstable state
+  process.exit(1);
+});
+
 mqtt.on("connect", () => {
-  mqtt.subscribe("eco_clients/#", { qos: 0 }, async (err: any) => {
+  mqtt.subscribe("eco_clients/#", { qos: 0 }, (err: any) => {
     if (err) {
-      console.log(err);
-      process.exit(1);
+      console.error("Failed to subscribe to eco_clients/#:", err);
+      // Will retry on next connect
+    } else {
+      console.log("Subscribed to eco_clients/#");
     }
   });
 });
 
 mqtt.on("reconnect", () => console.log("Reconnecting..."));
-// Graceful restart helper. If SELF_RESTART=true the process will attempt to
-// respawn itself using the same executable and args. Otherwise it will exit
-// with a non-zero code so an external supervisor (docker, systemd, pm2) can
-// restart it.
-async function gracefulRestart(code = 1) {
-  try {
-    console.log("Shutting down MQTT client before restart...");
-    // end will flush and close the connection; use a callback to ensure it's closed
-    await new Promise<void>((resolve) => {
-      try {
-        mqtt.end(false, {}, () => resolve());
-      } catch (e) {
-        resolve();
-      }
-    });
-  } catch (e) {
-    // ignore
-  }
 
-  const selfRestart = String(process.env.SELF_RESTART).toLowerCase() === "true";
-  if (selfRestart) {
-    try {
-      console.log("Attempting self-respawn...");
-      const cp = await import("child_process");
-      const spawn = (cp as any).spawn as (...args: any[]) => any;
-      // spawn the same executable (process.execPath) with the same args (process.argv.slice(1))
-      const child = spawn(process.execPath, process.argv.slice(1), {
-        detached: true,
-        stdio: "inherit",
-      }) as any;
-      // optional unref
-      if (typeof child.unref === "function") child.unref();
-      console.log("Respawned child pid:", child && child.pid);
-    } catch (e: any) {
-      console.error("Failed to self-respawn:", e?.message ?? e);
-    }
-  } else {
-    console.log("SELF_RESTART not enabled; exiting to allow external restart.");
-  }
-
-  process.exit(code);
-}
-
-mqtt.on("error", async (err) => {
+mqtt.on("error", (err) => {
   console.error("MQTT error:", err);
-  // trigger graceful restart (will exit process)
-  try {
-    await gracefulRestart(1);
-  } catch (e) {
-    // if restart fails for any reason, ensure process exits
-    process.exit(1);
-  }
+  // MQTT client is configured to resubscribe automatically
 });
 
 mqtt.on("message", async (topic, message) => {
@@ -199,7 +164,9 @@ mqtt.on("message", async (topic, message) => {
       );
       mqtt.publish(`eco_clients/${topic.split("/")[1]}/server_response`, `ok`);
     }
-  } catch (e: any) {}
+  } catch (e: any) {
+    console.error("Error processing MQTT message:", e);
+  }
 });
 
 // ON PROCESS QUIT
